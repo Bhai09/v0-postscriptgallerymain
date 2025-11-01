@@ -1,49 +1,49 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query"
+import { db } from "@/config/firebase"
+import { collection, query, limit, getDocs } from "firebase/firestore"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Link } from "react-router-dom"
+import { Sparkles, TrendingUp } from "lucide-react"
 
 const RightSidebar = () => {
   const { data: suggestedUsers } = useQuery({
     queryKey: ["suggested-users"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .limit(5);
-      return data || [];
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, limit(5))
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map((doc) => doc.data())
     },
-  });
+  })
 
   const { data: trendingTags } = useQuery({
     queryKey: ["trending-tags"],
     queryFn: async () => {
-      // Get posts with tags and count occurrences
-      const { data: posts } = await supabase
-        .from("posts")
-        .select("tags")
-        .not("tags", "is", null);
+      const galleriesRef = collection(db, "galleries")
+      const snapshot = await getDocs(galleriesRef)
 
-      const tagCounts: Record<string, number> = {};
-      posts?.forEach((post) => {
-        post.tags?.forEach((tag: string) => {
-          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-        });
-      });
+      const tagCounts: Record<string, number> = {}
+      snapshot.docs.forEach((doc) => {
+        const gallery = doc.data()
+        if (gallery.tags) {
+          gallery.tags.forEach((tag: string) => {
+            tagCounts[tag] = (tagCounts[tag] || 0) + 1
+          })
+        }
+      })
 
       return Object.entries(tagCounts)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 10)
-        .map(([tag, count]) => ({ tag, count }));
+        .map(([tag, count]) => ({ tag, count }))
     },
-  });
+  })
 
   return (
-    <aside className="fixed right-0 top-0 h-screen w-80 border-l border-border bg-card p-6 overflow-y-auto no-scrollbar">
+    <aside className="fixed right-0 top-0 h-screen w-80 border-l border-border bg-card p-6 overflow-y-auto no-scrollbar z-40">
       {/* Suggested Creators */}
       <Card className="mb-6">
         <CardHeader>
@@ -53,19 +53,21 @@ const RightSidebar = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {suggestedUsers?.map((user) => (
-            <div key={user.id} className="flex items-center justify-between">
-              <Link to={`/profile/${user.username}`} className="flex items-center gap-3 flex-1">
+          {suggestedUsers?.map((user: any) => (
+            <div key={user.uid} className="flex items-center justify-between">
+              <Link to={`/profile/${user.uid}`} className="flex items-center gap-3 flex-1">
                 <Avatar>
-                  <AvatarImage src={user.avatar_url || undefined} />
-                  <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={user.photoURL || undefined} />
+                  <AvatarFallback>{user.displayName?.[0]?.toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{user.username}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user.full_name}</p>
+                  <p className="font-semibold text-sm truncate">{user.displayName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.bio}</p>
                 </div>
               </Link>
-              <Button size="sm" variant="outline">Follow</Button>
+              <Button size="sm" variant="outline">
+                Follow
+              </Button>
             </div>
           ))}
         </CardContent>
@@ -86,14 +88,14 @@ const RightSidebar = () => {
                 <Badge variant="secondary" className="text-sm">
                   #{tag}
                 </Badge>
-                <span className="text-xs text-muted-foreground">{count} posts</span>
+                <span className="text-xs text-muted-foreground">{count} galleries</span>
               </div>
             </Link>
           ))}
         </CardContent>
       </Card>
     </aside>
-  );
-};
+  )
+}
 
-export default RightSidebar;
+export default RightSidebar

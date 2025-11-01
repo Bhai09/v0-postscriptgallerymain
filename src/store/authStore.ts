@@ -1,36 +1,51 @@
-import { create } from 'zustand';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { create } from "zustand"
+import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth"
+import { auth, db } from "@/config/firebase"
+import { doc, getDoc } from "firebase/firestore"
+
+interface User {
+  uid: string
+  email: string
+  displayName: string
+  photoURL?: string
+  bio: string
+  createdAt: Date
+  updatedAt: Date
+}
 
 interface AuthStore {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  setUser: (user: User | null) => void;
-  setSession: (session: Session | null) => void;
-  setLoading: (loading: boolean) => void;
-  initialize: () => void;
+  user: User | null
+  firebaseUser: FirebaseUser | null
+  loading: boolean
+  setUser: (user: User | null) => void
+  setLoading: (loading: boolean) => void
+  initialize: () => (() => void) | void
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
-  session: null,
+  firebaseUser: null,
   loading: true,
-  
+
   setUser: (user) => set({ user }),
-  setSession: (session) => set({ session, user: session?.user ?? null }),
   setLoading: (loading) => set({ loading }),
-  
-  initialize: async () => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        set({ session, user: session?.user ?? null, loading: false });
+
+  initialize: () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))
+          const userData = userDoc.data() as User
+          set({ firebaseUser, user: userData || null, loading: false })
+        } catch (error) {
+          console.error("Error fetching user data:", error)
+          set({ firebaseUser, user: null, loading: false })
+        }
+      } else {
+        set({ firebaseUser: null, user: null, loading: false })
       }
-    );
+    })
 
-    const { data: { session } } = await supabase.auth.getSession();
-    set({ session, user: session?.user ?? null, loading: false });
-
-    return () => subscription.unsubscribe();
+    return unsubscribe
   },
-}));
+}))

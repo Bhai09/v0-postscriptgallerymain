@@ -1,46 +1,62 @@
-import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updateProfile,
+} from "firebase/auth"
+import { auth, db } from "@/config/firebase"
+import { doc, setDoc } from "firebase/firestore"
 
 export interface AuthState {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
+  user: any | null
+  session: any | null
+  loading: boolean
 }
 
-export const signUp = async (email: string, password: string, username: string, fullName?: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo: `${window.location.origin}/`,
-      data: {
-        username,
-        full_name: fullName || "",
-      },
-    },
-  });
-  return { data, error };
-};
+export const signUp = async (email: string, password: string, displayName: string) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+    await updateProfile(userCredential.user, { displayName })
+
+    // Store user data in Firestore
+    await setDoc(doc(db, "users", userCredential.user.uid), {
+      uid: userCredential.user.uid,
+      email,
+      displayName,
+      photoURL: null,
+      bio: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+
+    return { data: userCredential, error: null }
+  } catch (error: any) {
+    return { data: null, error }
+  }
+}
 
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
-};
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password)
+    return { data: userCredential, error: null }
+  } catch (error: any) {
+    return { data: null, error }
+  }
+}
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
-};
+  try {
+    await firebaseSignOut(auth)
+    return { error: null }
+  } catch (error: any) {
+    return { error }
+  }
+}
 
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  return { user, error };
-};
+  return { user: auth.currentUser, error: null }
+}
 
 export const getSession = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  return { session, error };
-};
+  return { session: auth.currentUser ? { user: auth.currentUser } : null, error: null }
+}
