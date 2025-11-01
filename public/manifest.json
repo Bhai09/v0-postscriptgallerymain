@@ -1,0 +1,80 @@
+{
+  "name": "PostScript Gallery - Space Edition",
+  "short_name": "PostScript",
+  "description": "A cosmic gallery experience for your memories and creations",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0f0e1e",
+  "background_color": "#0f0e1e",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["photography", "graphics"],
+  "shortcuts": [
+    {
+      "name": "Create Gallery",
+      "short_name": "Create",
+      "description": "Create a new gallery",
+      "url": "/create?mode=gallery",
+      "icons": [
+        {
+          "src": "/icon-create-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Explore Gallery",
+      "short_name": "Explore",
+      "description": "Explore galleries from creators",
+      "url": "/explore",
+      "icons": [
+        {
+          "src": "/icon-explore-96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
